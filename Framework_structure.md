@@ -1,61 +1,91 @@
-# Framework Structure
 
-Nhóm tác giả tổ chức chương trình cho các tác vụ deep learning (object detection, instance segmentation) dựa trên framework [MMDetection](https://github.com/open-mmlab/mmdetection). Dưới đây là cách hệ thống hóa và tổ chức code của họ:
+# Framework_structure.md
 
----
+Tài liệu này liệt kê rõ ràng, dễ đọc các thành phần chính trong repo ViT-CoMer, giúp người phân tích nhanh chóng nắm bắt cấu trúc, mục đích và mối liên hệ giữa các file/thư mục.
 
-### 1. **Cấu trúc thư mục**
+## 1. detection/
 
-- **detection/**: Chứa toàn bộ code liên quan đến object detection/instance segmentation.
-  - `configs/`: Các file cấu hình mô hình, dataset, pipeline huấn luyện/đánh giá.
-  - `mmcv_custom/`, `mmdet_custom/`: Các module mở rộng hoặc custom dựa trên MMDetection.
-  - `ops/`: Các phép toán đặc biệt (ví dụ: Multi-Scale Deformable Attention).
-  - `train.py`, `test.py`, `visualization.py`: Script huấn luyện, đánh giá, trực quan hóa kết quả.
-  - `README.md`: Hướng dẫn sử dụng, kết quả, cách chạy.
+- **configs/**: Chứa các file cấu hình cho mô hình detection/instance segmentation.
+	- `_base_/`:
+		- `datasets/`: Định nghĩa dataset (ví dụ: coco_detection.py, coco_instance.py).
+		- `models/`: Định nghĩa kiến trúc cơ bản (ví dụ: mask_rcnn_r50_fpn.py).
+		- `schedules/`: Lịch huấn luyện (schedule_1x.py, schedule_2x.py).
+		- `default_runtime.py`: Cấu hình runtime mặc định.
+	- `mask_rcnn/`, `dinov2/`, ...: Các file cấu hình cụ thể cho từng mô hình (ví dụ: mask_rcnn_dinov2_comer_base_fpn_1x_coco.py).
+	- **Liên hệ:** Các file này được import vào script train/test để build mô hình, dataset, optimizer.
 
----
+- **mmcv_custom/**: Module mở rộng cho MMCV.
+	- Ví dụ: checkpoint.py, my_checkpoint.py (lưu/tải checkpoint), customized_text.py (xử lý text), layer_decay_optimizer_constructor.py (tối ưu hóa), uniperceiver_converter.py (chuyển đổi mô hình).
+	- **Liên hệ:** Được import trong file cấu hình hoặc script chính để thay thế/tăng cường chức năng MMCV mặc định.
 
-### 2. **Luồng chạy chính**
+- **mmdet_custom/**: Module mở rộng cho MMDetection.
+	- `models/`: Custom backbone, head, neck (ví dụ: backbones/comer_modules.py, roi_heads/custom_roi_head.py).
+	- `ops/`: Các phép toán đặc biệt (ví dụ: attention), có thể có file C++/CUDA, make.sh để build.
+	- **Liên hệ:** Được sử dụng trong file cấu hình để build mô hình với các thành phần custom.
 
-- **Huấn luyện**:  
-  - Sử dụng script `train.py`  
-  - Đọc cấu hình từ file `.py` trong `configs/` (ví dụ: `mask_rcnn_dinov2_comer_base_fpn_1x_coco.py`)
-  - Xây dựng mô hình qua `build_detector`, khởi tạo dataset, seed, logger, v.v.
-  - Gọi hàm `train_detector` để bắt đầu huấn luyện.
+- **ops/**: Chứa các phép toán đặc biệt, có thể cần build thêm (ví dụ: Multi-Scale Deformable Attention, make.sh).
+	- **Liên hệ:** Được gọi trong các module custom hoặc trực tiếp trong mô hình.
 
-- **Đánh giá**:  
-  - Sử dụng script `test.py`  
-  - Đọc cấu hình, load checkpoint, xây dựng mô hình và dataset.
-  - Chạy đánh giá qua `single_gpu_test` hoặc `multi_gpu_test`.
+- **train.py**: Script huấn luyện mô hình (đọc config, build mô hình, dataset, optimizer, logger, checkpoint, gọi train_detector).
 
-- **Trực quan hóa**:  
-  - Sử dụng `visualization.py` để trực quan hóa kết quả trên ảnh.
+- **test.py**: Script đánh giá mô hình (đọc config, load checkpoint, build mô hình, dataset test, chạy single/multi_gpu_test).
 
----
+- **visualization.py**: Script trực quan hóa kết quả (vẽ bounding box, mask lên ảnh).
 
-### 3. **Cấu hình mô hình**
+- **dist_train.sh, dist_test.sh, train.sh, test.sh**: Script shell hỗ trợ chạy train/test nhanh, phân tán hoặc trên nhiều GPU.
 
-- Các file cấu hình trong `configs/` định nghĩa:
-  - Kiến trúc mô hình (backbone, neck, head, ...).
-  - Dataset, pipeline tiền xử lý.
-  - Tham số huấn luyện, optimizer, scheduler, v.v.
-- Có thể kế thừa, ghi đè các cấu hình cơ sở (`_base_`).
+- **README.md**: Hướng dẫn sử dụng detection: cài đặt, chuẩn bị dữ liệu, train/test, giải thích các file cấu hình, ví dụ lệnh chạy.
 
 ---
 
-### 4. **Mở rộng/custom**
+## 2. segmentation/
 
-- Các module custom được đặt trong `mmcv_custom/`, `mmdet_custom/` để mở rộng hoặc thay đổi hành vi mặc định của MMDetection.
-- Các phép toán đặc biệt (ví dụ: Multi-Scale Deformable Attention) được cài đặt trong `ops/` và build qua script `make.sh`.
+- **configs/**: Cấu hình cho segmentation.
+	- `ade20k/`, `coco_stuff164k/`: Các file cấu hình cho từng dataset (ví dụ: upernet_vit-b16_512x512_160k_ade20k.py).
+	- `_base_/`: Cấu hình cơ sở cho dataset, model, schedule, runtime.
+	- **Liên hệ:** Được import vào các script train/test segmentation.
+
+- **mmcv_custom/**, **mmseg_custom/**: Module mở rộng cho segmentation.
+	- core/, datasets/, models/: Custom dataset, loss, head, backbone cho segmentation.
+	- **Liên hệ:** Được sử dụng trong file cấu hình segmentation để build các thành phần custom.
+
+- **train.py, test.py**: Script huấn luyện, đánh giá segmentation (đọc config, build mô hình, dataset, optimizer, logger, checkpoint, gọi train/test).
+
+- **image_demo.py, video_demo.py**: Demo kết quả segmentation trên ảnh/video thực tế (đọc checkpoint đã huấn luyện, chạy inference trên ảnh/video).
+
+- **dist_train.sh, dist_test.sh, train.sh, test.sh, slurm_train.sh, slurm_test.sh**: Script shell hỗ trợ chạy nhanh, phân tán hoặc trên hệ thống SLURM.
+
+- **README.md**: Hướng dẫn sử dụng segmentation: cài đặt, chuẩn bị dữ liệu, train/test, giải thích các file cấu hình, ví dụ lệnh chạy.
 
 ---
 
-### 5. **Cách sử dụng**
+## 3. README.md
 
-- Cài đặt môi trường theo hướng dẫn trong `README.md`.
-- Chạy huấn luyện/đánh giá bằng các script shell (`train.sh`, `test.sh`) hoặc trực tiếp qua Python.
+- **detection/README.md**: Hướng dẫn sử dụng, cài đặt, mô tả pipeline detection, các lưu ý khi huấn luyện/đánh giá, ví dụ: cách chuẩn bị dữ liệu COCO, lệnh train/test mẫu, giải thích các file cấu hình detection.
+
+- **segmentation/README.md**: Hướng dẫn sử dụng, cài đặt, mô tả pipeline segmentation, các lưu ý khi huấn luyện/đánh giá, ví dụ: cách chuẩn bị dữ liệu ADE20K, lệnh train/test mẫu, giải thích các file cấu hình segmentation.
+
+- **README.md (root)**: Tổng quan dự án, hướng dẫn cài đặt, sử dụng, các thông tin chung, ví dụ: giới thiệu mục tiêu dự án, các tính năng nổi bật, hướng dẫn cài đặt nhanh, các repo liên quan.
 
 ---
 
-**Tóm lại:**  
-Nhóm tác giả tận dụng tối đa cấu trúc module hóa, cấu hình động và khả năng mở rộng của MMDetection để tổ chức code, giúp dễ dàng thêm mới mô hình, thay đổi pipeline, và tái sử dụng các thành phần cho các tác vụ deep learning khác nhau.
+## 4. File ở root
+
+- **check_params.py**: Script kiểm tra số lượng tham số của mô hình (đọc file config, build mô hình, in số lượng tham số tổng, backbone, neck, head).
+
+- **Framework_structure.md**: Tài liệu mô tả cấu trúc framework (file này).
+
+- **LICENSE**: Bản quyền dự án, quy định về việc sử dụng, phân phối mã nguồn.
+
+- **Xia_ViT-CoMer_Feature_fusion_for_Dense_Prediction_CVPR_2024_paper.pdf**: Bản PDF bài báo liên quan, trình bày chi tiết về phương pháp và kết quả nghiên cứu.
+
+---
+
+## 5. Mối liên hệ tổng thể
+
+- File cấu hình là trung tâm, quyết định mọi thành phần sẽ được build và sử dụng trong pipeline.
+- Các module custom (mmcv_custom, mmdet_custom, mmseg_custom) giúp mở rộng, tùy biến framework gốc (MMDetection/MMCV/MMsegmentation) để phù hợp với ý tưởng mới của nhóm tác giả.
+- Script shell giúp tự động hóa, đơn giản hóa việc chạy lệnh phức tạp, đặc biệt khi huấn luyện phân tán hoặc trên nhiều GPU.
+- Các script Python (train.py, test.py, ...) là nơi thực thi chính, phối hợp đọc config, build mô hình, huấn luyện, đánh giá, lưu checkpoint, log kết quả.
+- Các file README.md cung cấp hướng dẫn chi tiết, giúp người dùng mới dễ dàng tiếp cận và sử dụng repo.
+- Các file PDF, LICENSE cung cấp thông tin pháp lý và học thuật liên quan.
