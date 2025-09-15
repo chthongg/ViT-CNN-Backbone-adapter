@@ -69,19 +69,7 @@ Tài liệu này liệt kê rõ ràng, dễ đọc các thành phần chính tro
 
 ---
 
-## 4. File ở root
-
-- **check_params.py**: Script kiểm tra số lượng tham số của mô hình (đọc file config, build mô hình, in số lượng tham số tổng, backbone, neck, head).
-
-- **Framework_structure.md**: Tài liệu mô tả cấu trúc framework (file này).
-
-- **LICENSE**: Bản quyền dự án, quy định về việc sử dụng, phân phối mã nguồn.
-
-- **Xia_ViT-CoMer_Feature_fusion_for_Dense_Prediction_CVPR_2024_paper.pdf**: Bản PDF bài báo liên quan, trình bày chi tiết về phương pháp và kết quả nghiên cứu.
-
----
-
-## 5. Mối liên hệ tổng thể
+## 4. Mối liên hệ tổng thể
 
 - File cấu hình là trung tâm, quyết định mọi thành phần sẽ được build và sử dụng trong pipeline.
 - Các module custom (mmcv_custom, mmdet_custom, mmseg_custom) giúp mở rộng, tùy biến framework gốc (MMDetection/MMCV/MMsegmentation) để phù hợp với ý tưởng mới của nhóm tác giả.
